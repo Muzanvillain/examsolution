@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Exam Solutions</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            color: white;
+        }
+        .container {
+            text-align: center;
+            padding: 40px;
+            background: rgba(255,255,255,0.1);
+            border-radius: 20px;
+            backdrop-filter: blur(10px);
+            max-width: 600px;
+            width: 90%;
+        }
+        .locked { display: block; }
+        .unlocked { display: none; }
+        h1 { font-size: 2.5em; margin-bottom: 20px; }
+        .countdown {
+            font-size: 3em;
+            font-weight: bold;
+            margin: 30px 0;
+            font-family: monospace;
+        }
+        .info {
+            font-size: 1.1em;
+            opacity: 0.9;
+            margin-top: 20px;
+        }
+        .download-btn {
+            display: inline-block;
+            padding: 15px 40px;
+            background: #00d084;
+            color: white;
+            text-decoration: none;
+            border-radius: 50px;
+            font-size: 1.2em;
+            font-weight: bold;
+            margin-top: 20px;
+            transition: transform 0.2s;
+        }
+        .download-btn:hover { transform: scale(1.05); }
+        .icon { font-size: 4em; margin-bottom: 20px; }
+        .error { color: #ff6b6b; font-size: 1em; margin-top: 10px; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- LOADING STATE -->
+        <div id="loading">
+            <div class="icon">⏳</div>
+            <h1>Checking Time...</h1>
+            <p>Please wait while we verify the current time.</p>
+        </div>
+
+        <!-- LOCKED STATE -->
+        <div id="locked" style="display: none;">
+            <div class="icon">🔒</div>
+            <h1>Solutions Locked</h1>
+            <p style="font-size: 1.2em; margin-bottom: 10px;">Exam solutions are not yet available.</p>
+            <div class="countdown" id="timer">Loading...</div>
+            <p class="info">Solutions unlock at: <strong id="unlockTimeDisplay"></strong></p>
+            <p class="info" style="margin-top: 15px; font-size: 0.9em; opacity: 0.7;">
+                Current server time: <span id="currentTime"></span>
+            </p>
+        </div>
+
+        <!-- UNLOCKED STATE -->
+        <div id="unlocked" style="display: none;">
+            <div class="icon">🔓</div>
+            <h1>Solutions Available!</h1>
+            <p style="font-size: 1.2em; margin-bottom: 20px;">The exam period has ended. You may now access the solutions.</p>
+            <a href="https://drive.google.com/uc?export=download&id=17rAJ8kaA_Apo4bR1BV9VMWfOpUArx20h" class="download-btn" download>📄 Download Solutions PDF</a>
+            <p class="info" style="margin-top: 20px;">Good luck with your studies!</p>
+        </div>
+    </div>
+
+    <script>
+        // ============================================
+        // CONFIGURE THIS: Set your unlock time (UTC)
+        // ============================================
+        // Algeria is UTC+1, so 21:10 UTC = 22:10 Algeria time
+        // If you want 23:50 Algeria time, use '2026-04-29T22:50:00'
+        const UNLOCK_TIME_UTC = '2026-04-30T19:30:00';
+        // ============================================
+
+        const unlockTime = new Date(UNLOCK_TIME_UTC + 'Z');
+        document.getElementById('unlockTimeDisplay').textContent = unlockTime.toLocaleString();
+
+        async function checkTime() {
+            try {
+                // Get current time from a trusted server (WorldTimeAPI)
+                const response = await fetch('https://worldtimeapi.org/api/ip');
+                const data = await response.json();
+                
+                // Parse the server time
+                const serverTime = new Date(data.utc_datetime);
+                const now = serverTime;
+                
+                document.getElementById('currentTime').textContent = now.toLocaleString();
+
+                const diff = unlockTime - now;
+
+                if (diff <= 0) {
+                    // UNLOCKED!
+                    document.getElementById('loading').style.display = 'none';
+                    document.getElementById('locked').style.display = 'none';
+                    document.getElementById('unlocked').style.display = 'block';
+                } else {
+                    // Still locked
+                    document.getElementById('loading').style.display = 'none';
+                    document.getElementById('locked').style.display = 'block';
+                    document.getElementById('unlocked').style.display = 'none';
+                    
+                    updateTimer(diff);
+                    setInterval(() => {
+                        const newDiff = unlockTime - new Date();
+                        updateTimer(newDiff > 0 ? newDiff : 0);
+                    }, 1000);
+                }
+            } catch (error) {
+    // Fallback: use local time, no warning
+    const now = new Date();
+    const diff = unlockTime - now;
+    
+    document.getElementById('loading').style.display = 'none';
+    
+    if (diff <= 0) {
+        document.getElementById('unlocked').style.display = 'block';
+    } else {
+        document.getElementById('locked').style.display = 'block';
+        updateTimer(diff);
+        setInterval(() => {
+            const newDiff = unlockTime - new Date();
+            updateTimer(newDiff > 0 ? newDiff : 0);
+        }, 1000);
+    }
+}
+        }
+
+        function updateTimer(diff) {
+            const days = Math.floor(diff / (1000 * 60 * 60 * 24));
+            const hours = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+            const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+            const seconds = Math.floor((diff % (1000 * 60)) / 1000);
+
+            let timeStr = '';
+            if (days > 0) timeStr += days + 'd ';
+            timeStr += String(hours).padStart(2, '0') + ':';
+            timeStr += String(minutes).padStart(2, '0') + ':';
+            timeStr += String(seconds).padStart(2, '0');
+
+            document.getElementById('timer').textContent = timeStr;
+        }
+
+        // Start checking
+        checkTime();
+    </script>
+</body>
+</html>
